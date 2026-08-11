@@ -1,0 +1,5 @@
+# H1VE — o mínimo. Acrescente o que a sua stack pedir.
+.env*
+!.env.example
+
+node_modules/
