@@ -149,22 +149,25 @@ npm test
 
 ## AI Declaration
 
-| Arquivo | % gerado por IA | Revisado manualmente? |
+| Arquivo | % gerado por IA | Revisado por humano? |
 |---|---|---|
-| `specs/SPEC-001-*.md` | 100% | sim — aprovada pelo founder no board antes de qualquer código |
-| `package.json` | 100% | sim |
-| `.nvmrc` | 100% | sim |
+| `specs/SPEC-001-*.md` | 100% | **sim** — lida e aprovada pelo founder no board (`spec → dev`) antes de qualquer código |
+| `package.json` | 100% | pendente — review do arquiteto no PR #1 |
+| `.nvmrc` | 100% | pendente — review do arquiteto no PR #1 |
 | `package-lock.json` | gerado por `npm install` | n/a — artefato de ferramenta |
-| `scripts/build.mjs` | 100% | sim |
-| `test/ci-contract.test.mjs` | 100% | sim |
-| `test/spec-format.test.mjs` | 100% | sim |
-| `test/repo-hygiene.test.mjs` | 100% | sim |
-| `README.md` | 100% | sim |
-| `.gitignore` | edição pontual | sim |
-| `specs/DONE-001-*.md` | 100% | sim |
+| `scripts/build.mjs` | 100% | pendente — review do arquiteto no PR #1 |
+| `test/ci-contract.test.mjs` | 100% | pendente — review do arquiteto no PR #1 |
+| `test/spec-format.test.mjs` | 100% | pendente — review do arquiteto no PR #1 |
+| `test/repo-hygiene.test.mjs` | 100% | pendente — review do arquiteto no PR #1 |
+| `README.md` | 100% | pendente — review do arquiteto no PR #1 |
+| `.gitignore` | edição pontual | pendente — review do arquiteto no PR #1 |
+| `specs/DONE-001-*.md` | 100% | pendente — review do arquiteto no PR #1 |
 
-**Agente:** Claude Opus 5 (Claude Code). **Supervisão:** o card foi movido `spec → dev` pelo founder
-antes de qualquer linha de código; a SPEC foi publicada no card e aprovada primeiro.
+**Agente:** Claude Opus 5 (Claude Code). **Supervisão exercida até aqui:** o card foi movido
+`spec → dev` pelo founder antes de qualquer linha de código, e a SPEC-001 foi publicada no card e
+aprovada primeiro — o *contrato* passou por humano, o *código* ainda não. A revisão linha a linha é
+o gate seguinte (review do arquiteto). Todo arquivo foi revisado **pelo agente** antes do commit, e
+verificado por execução: 10/10 testes verdes local e no CI, mais a prova de vermelho.
 
 **A IA sugeriu mudanças fora do escopo da SPEC?**
 - [x] Sim → duas, ambas registradas em "Desvios" abaixo: (a) uma asserção extra em
