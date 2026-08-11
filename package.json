@@ -9,7 +9,7 @@
     "node": ">=20.11"
   },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "compile": "node scripts/build.mjs",
     "test": "node --test \"test/*.test.mjs\""
   }
 }
