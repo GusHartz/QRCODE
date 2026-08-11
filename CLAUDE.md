@@ -74,7 +74,16 @@ END:VCARD
 
 ## Estado atual
 
-Projeto **recém-fundado**. Documentos de fundação (Visão & Escopo, Especificação Funcional, SDD, Roadmap) concluídos; nenhuma spec implementada ainda. **Pronto para a SPEC-001.**
+**SPEC-001 entregue** (2026-08-11) — [PR #1](https://github.com/GusHartz/QRCODE/pull/1), aguardando review do arquiteto. Documentos de fundação (Visão & Escopo, Especificação Funcional, SDD, Roadmap) concluídos. **Nenhum código de produto ainda** — não existe `index.html`.
+
+O que a SPEC-001 mudou: o repositório agora **roda e é verificado de verdade**.
+- `npm ci` · `npm run build` · `npm test` — os três funcionam por comando e estão documentados no [`README.md`](README.md).
+- `package.json` (zero dependências), `package-lock.json`, `.nvmrc` (Node 24), `scripts/build.mjs` (monta `dist/`).
+- 10 testes em `node:test` (`test/`): contrato CI ↔ `package.json`, formato das SPEC/DONE e higiene do repositório.
+- `.github/workflows/ci.yml` **não foi modificado** — ele já rodava os três comandos; faltava o `package.json`.
+- **O CI foi provado em vermelho:** quebra deliberada commitada ([run vermelho](https://github.com/GusHartz/QRCODE/actions/runs/31501438841)) e revertida ([run verde](https://github.com/GusHartz/QRCODE/actions/runs/31501518901)). Verde aqui é afirmação verificável, não decoração.
+
+**Pronto para a próxima spec.** Cards no backlog do board: payload vCard, página HTML estática base, renderização do QR (este depende dos dois primeiros).
 
 **Caminho crítico do roadmap:** `2.1 (payload vCard)` → `2.2 (renderização QR)` → `1.1 (página HTML)` → `4.1 (deploy)`. A Fase 3 (layout/acessibilidade) pode rodar em paralelo ou após o MVP no ar.
 
@@ -82,7 +91,8 @@ Projeto **recém-fundado**. Documentos de fundação (Visão & Escopo, Especific
 - Escanear o QR com ao menos 2 leitores (Câmera iOS + app Android) e confirmar importação correta do contato.
 - Confirmar dados exatos (nome, e-mail, telefone) e que o telefone disca corretamente.
 - Confirmar que a página abre em mobile e desktop e funciona offline.
-- Único gate automatizado sugerido: validação de HTML (`html-validate`) antes do deploy. *(Suposição — revisar.)*
+- Gate automatizado em vigor desde a SPEC-001: `npm test` (10 testes) + `npm run build` rodando no CI a cada PR — e comprovadamente capaz de reprovar.
+- Gate ainda pendente: validação de HTML (`html-validate`), que entra junto com o primeiro `index.html`. Hoje não há arquivo HTML para validar.
 
 **Pontos a revisar antes de fechar decisões:** formato vCard vs. texto puro; divulgação pública do telefone pessoal; biblioteca de QR e CDN; plataforma de deploy; CSP.
 

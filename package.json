@@ -1,0 +1,15 @@
+{
+  "name": "qr-code",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Página estática com o QR Code do contato de Gustavo Hartz (vCard).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

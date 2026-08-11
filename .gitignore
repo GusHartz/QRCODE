@@ -3,3 +3,9 @@
 !.env.example
 
 node_modules/
+npm-debug.log*
+
+# Artefato do `npm run build` — gerado, nunca versionado.
+dist/
+
+.DS_Store
