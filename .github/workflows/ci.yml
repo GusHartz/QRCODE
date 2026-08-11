@@ -1,0 +1,129 @@
+# CI da fundação H1VE (SPEC-089) — resiliente: roda com ou sem app Node ainda.
+# Ao abrir um PR, produz um check_suite que o H1VE Flow consome p/ mover pr -> ci -> qa_data.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # SPEC-166 (GATE 2): lint de formato das SPEC/DONE alteradas no PR. NÃO-BLOQUEANTE
+      # (continue-on-error → a suite fica verde, não estranda o card); apenas anota (::error).
+      - name: Lint de SPECs/DONEs (H1VE — formato do template)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF" >/dev/null 2>&1 || true
+          : > /tmp/h1ve_changed
+          git diff --name-only "FETCH_HEAD...HEAD" > /tmp/h1ve_changed 2>/dev/null || git diff --name-only FETCH_HEAD HEAD > /tmp/h1ve_changed 2>/dev/null || : > /tmp/h1ve_changed
+          bad=0
+          while IFS= read -r f; do
+            case "$f" in specs/SPEC-*.md|specs/DONE-*.md) ;; *) continue ;; esac
+            case "$f" in *TEMPLATE.md) continue ;; esac
+            [ -e "$f" ] || continue
+            case "$f" in
+              specs/DONE-*.md)
+                grep -qiE '^#+[[:space:]]*Resumo do que foi feito' "$f" || { echo "::error file=$f::DONE fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Resumo do que foi feito"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Arquivos modificados' "$f" || { echo "::error file=$f::DONE fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Arquivos modificados"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Critérios de aceitação' "$f" || { echo "::error file=$f::DONE fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Critérios de aceitação"; bad=1; }
+                grep -qiE '^#+[[:space:]]*AI Declaration' "$f" || { echo "::error file=$f::DONE fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## AI Declaration"; bad=1; }
+                ;;
+              *)
+                grep -qiE '^#+[[:space:]]*Objetivo' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Objetivo"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Contexto e motivação' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Contexto e motivação"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Escopo — o que está DENTRO' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Escopo — o que está DENTRO"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Escopo — o que está FORA' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Escopo — o que está FORA"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Arquivos que serão tocados' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Arquivos que serão tocados"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Critérios de aceitação' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Critérios de aceitação"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Riscos e dependências' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Riscos e dependências"; bad=1; }
+                grep -qiE '^#+[[:space:]]*Notas de implementação' "$f" || { echo "::error file=$f::SPEC fora do template H1VE (SPEC-166) — falta a seção obrigatória: ## Notas de implementação"; bad=1; }
+                ;;
+            esac
+          done < /tmp/h1ve_changed
+          if [ "$bad" -ne 0 ]; then
+            echo "H1VE (SPEC-166): SPEC/DONE alterada(s) neste PR não seguem o template. Corrija as seções anotadas acima — o gate de plataforma (Modo Estrito) é autoritativo."
+            exit 1
+          fi
+
+      - name: Detectar app Node
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f .nvmrc ]; then
+            echo "nvmrc=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "nvmrc=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A versão do Node é do PROJETO, não nossa: se houver .nvmrc, ele manda. O padrão fixo em 20
+      # era quebra latente — um projeto que exige runtime mais novo ficava verde só porque o CI não
+      # chegava a rodar nada. Sem .nvmrc, cai num LTS vivo.
+      - name: Setup Node (versão do .nvmrc)
+        if: steps.detect.outputs.node == 'true' && steps.detect.outputs.nvmrc == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Setup Node (padrão)
+        if: steps.detect.outputs.node == 'true' && steps.detect.outputs.nvmrc != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências
+        if: steps.detect.outputs.node == 'true'
+        run: npm ci || npm install
+
+      - name: Verificações — e o que NÃO foi verificado
+        if: steps.detect.outputs.node == 'true'
+        run: |
+          have=$(node -p "Object.keys((require('./package.json').scripts)||{}).join(' ')" 2>/dev/null || echo "")
+          ran=""
+          for s in lint typecheck test build; do
+            case " $have " in *" $s "*) ran="$ran $s" ;; esac
+          done
+
+          echo "### CI da fundação H1VE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          for s in lint typecheck test build; do
+            case " $ran " in
+              *" $s "*) echo "- $s — rodou" >> "$GITHUB_STEP_SUMMARY" ;;
+              *) echo "- $s — **script ausente**, nada verificado por aqui" >> "$GITHUB_STEP_SUMMARY" ;;
+            esac
+          done
+
+          case " $ran " in
+            *" test "*|*" typecheck "*|*" build "*) ;;
+            *)
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "Nenhum script de verificação em package.json. Verde aqui seria mentira." >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::package.json existe mas não tem nenhum script de verificação (test, typecheck ou build). O CI não teria o que rodar."
+              exit 1 ;;
+          esac
+
+          npm run lint --if-present
+          npm run typecheck --if-present
+          npm test --if-present
+          npm run build --if-present
+
+      - name: Sem app — nada foi verificado
+        if: steps.detect.outputs.node != 'true'
+        run: |
+          echo "### CI da fundação H1VE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Não há package.json: **nada foi verificado**." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Vermelho de propósito. Verde diria 'tudo certo' sobre um repositório onde nenhuma verificação existe — e um CI assim fica verde por meses sem rodar nada. O primeiro card do board fecha isto." >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::Nada foi verificado — não há package.json. O primeiro card do board fecha isto."
+          exit 1
